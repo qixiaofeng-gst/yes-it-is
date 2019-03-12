@@ -1,35 +1,40 @@
 const express = require('express')
+const bp = require('body-parser')
+const fs = require('fs')
+
+const working_state = {
+  working: true,
+  temp: true,
+}
+for (const k in working_state) {
+  working_state[k] = k
+}
+const file_suffix = '.txt'
+const file_name = `${working_state.working}${file_suffix}`
 
 const app = express()
-const app_port = 3100
+const app_port = 8001
 
-const ss = require('./libs/ss')
+const nums = {
+  increment: 0,
+}
 
-const sessions = new ss(0) // permenant, so never use sessions.clear()
-const login_msg = { msg: 'login please' }
-app.use((req, res, next) => { // Middleware to take care of sessions.
-  const { query: { session }, path } = req
-	
-  console.log(`Accessing path: ${path} at ${(new Date()).toLocaleString()}.`)
-	
-  if ('/user' === path) {
-		sessions.clear(session)
-		req.sessions = sessions
-    next()
-    return
+app.post('/', bp.json(), (req, res) => {
+  const { body: { text } } = req
+  
+  if (text) {
+    nums.increment += text.length
+    fs.appendFileSync(file_name, text)
   }
-  if (false === sessions.check(session)) {
-    res.json(login_msg)
-    return
-  }
-
-	req.session = sessions.get(session)
-  next()
+  
+  const stats = fs.statSync(file_name, { bigint: false })
+  console.log(`Access YII at ${new Date().toLocaleString()}`)
+  res.json({
+    nums,
+    stats,
+    state: working_state.working,
+  })
 })
-
-app.post('/', (req, res) => res.json({ message: 'Welcome to task manager.' }))
-app.use('/user', require('./routers/user'))
-app.use('/task', require('./routers/task'))
 
 app.listen(app_port, () => {
   console.log(`Server listening ${app_port}. Start at ${new Date().toLocaleString()}`)

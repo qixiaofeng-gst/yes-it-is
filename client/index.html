@@ -9,6 +9,8 @@ window.addEventListener('load', () => {
     'color: deepskyblue;',
     'color: darkgreen;'
   )
+  
+  const seperator = '======='
 
   const one_moment = 20
   const one_second = 50 * one_moment
@@ -47,6 +49,9 @@ window.addEventListener('load', () => {
       s: selector => p_dom(dom.querySelector(selector)),
       set: (key, value) => (dom.setAttribute(key, value), pd),
       attr: name => dom.getAttribute(name),
+      focuz: () => {
+        return dom.focus()
+      },
       append: child => {
         if (child.is_proxy) {
           dom.appendChild(child.mami)
@@ -121,13 +126,83 @@ window.addEventListener('load', () => {
     const pd = new Proxy(dom, handler)
     return pd
   }
+  
+  const model = {}
+  const views = {}
+  /**
+  Basic configuration format:
+  {
+    init: comp => {
+      //Do something
+    },
+    update: (comp, key) => {
+      //Do something
+    },
+  },
+  **/
+  const views_config = {
+    increment: {},
+    file_size: {},
+    apprx_len: {},
+    state: {},
+    msg: {},
+    input: {
+      init: comp => {
+        comp.onkeydown = ({ keyCode }) => {
+          if (13 == keyCode && comp.value) {
+            insert(comp.value)
+            comp.value = ''
+          }
+        }
+        comp.onblur = e => {
+          comp.focuz()
+        }
+        comp.focuz()
+      },
+      update: (comp, key) => {
+      },
+    },
+  }
+  for (const k in views_config) {
+    const comp = s(`.${k}`)
+    views[k] = comp
+    const { init } = views_config[k]
+    if (undefined === init) {
+      continue
+    } else {
+      init(comp)
+    }
+  }
+  const update_ui = () => {
+    for (const k in views_config) {
+      const { update } = views_config[k]
+      if (undefined === update) {
+        const m = model[k]
+        if (undefined === m) {
+          continue
+        }
+        views[k].innerText = `${m}`
+      } else {
+        update(views[k], k)
+      }
+    }
+  }
+  const assign_obj = (target, source) => {
+    for (const k in source) {
+      const v = source[k]
+      if (undefined === v) {
+        continue
+      }
+      target[k] = v
+    }
+  }
 
   //const url_base = 'https://www.gsegment.com/tms'
-  const url_base = 'http://localhost:8001'
+  const url_base = 'http://localhost:3000'
   const msg_login = 'login please'
   const post = (url, data) => new Promise((res, rej) => {
     fetch(
-      `${url_base}/${url}?session=${localStorage.tm_session}`,
+      `${url_base}/${url}`,//?session=${localStorage.tm_session}`,
       {
         method: 'POST',
         body: JSON.stringify(data),
@@ -136,798 +211,82 @@ window.addEventListener('load', () => {
         }
       }
     ).then(
-      resp => resp.json().then(
-        result => {
-          if (msg_login === result.msg) {
-            rej({ msg: '请先登录 - 输入框输入 email:your_email' })
-          } else {
-            res(result)
-          }
-        }
-      ).catch(
-        err => rej({ err, msg: 'receive json failed' })
-      )
-    ).catch(
-      err => rej({ err, msg: 'fetch failed' })
-    )
-  })
-  const login = (email, password) => new Promise((res, rej) => {
-    post('user', { email, password }).then(
-      ({ success, session }) => {
-        if (success) {
-          localStorage.tm_session = session
-          res(success)
-        } else {
-          rej({ msg: '登录信息有误' })
-        }
-      }
-    ).catch(err => rej(err))
-  })
-  const list_task = () => post('task/list')
-  const save_task = task => post('task', task).then(({ success, _id }) => {
-    if (success) {
-      task._id = _id
-    } else {
-      log('任务保存失败，请咨询服务器管理员')
-    }
-  }).catch(error => {
-    log('任务保存失败')
-  })
-
-  /*const notifi = new Notification('hehe', {
-    body: 'damn',
-    requireInteraction: true,
-    icon: 'css/task_manager.png',
-    image: 'css/task_manager.png'
-  })*/
-
-  const task_state = {
-    in_progress: 'wip',
-    completed: 'done',
-    pending: 'hung'
-  }
-
-  const create_task = obj => {
-    //TODO perhaps make this the true model
-    //TODO use proxy to wrap the task
-    //TODO add get 'view' with proxied dom value
-    //TODO add get 'data' with values need persistence
-    //TODO add get 'state' with values only exists at runtime
-    const data = {
-      _id: false,
-      desc: false,
-      state: task_state.in_progress,
-      sn: 0,
-      is_activated: false,
-      is_cleared: false,
-      timeCost: 0,
-      startTime: 0
-    }
-    for (const key in data) {
-      if (false === obj.hasOwnProperty(key)) {
-        continue
-      }
-      data[key] = obj[key]
-    }
-    const view = e_from(
-      (data.state === task_state.in_progress)
-      ? task_view_template
-      : done_view_template
-    )
-    const self = {}
-    if (obj._id) {
-      self._id = obj._id
-    }
-    self.desc = obj.desc
-    self.is_activated = obj.is_activated || false
-    self.is_cleared = obj.is_cleared || false
-    self.state = obj.state || task_state.in_progress
-    self.timeCost = obj.timeCost || 0  // In milliseconds.
-    self.startTime = obj.startTime || 0  // Invalid value.
-    self.sn = obj.sn || 0 // Only work for active tasks.
-
-    let h_displaying = false
-
-    const clear_displaying = () => {
-      if (false === h_displaying) {
-        return
-      }
-      clearInterval(h_displaying)
-      h_displaying = false
-    }
-
-    const inactivate = state => {
-      self.state = state
-      if(false === self.is_activated) {
-        return
-      }
-      self.timeCost += (Date.now() - self.startTime)
-      self.startTime = 0
-      self.is_activated = false
-      clear_displaying()
-    }
-
-    self.activate = view => {
-      self.state = task_state.in_progress
-      if(self.is_activated) return
-      self.startTime = self.startTime || Date.now()
-      self.is_activated = true
-      h_displaying = setInterval(() => {
-        const display = view.s('.time_cost')
-        display.remove_class('hide')
-        display.innerHTML = time_str(self.get_timecost())
-      }, one_moment)
-    }
-
-    self.inactivate = () => inactivate(task_state.in_progress)
-    self.complete = () => inactivate(task_state.completed)
-    self.pend = () => inactivate(task_state.pending)
-
-    self.get_timecost = () => {
-      const increment = self.is_activated ? (Date.now() - self.startTime) : 0
-      return (self.timeCost + increment)
-    }
-    return self
-  }
-
-  const task_view_template = s('.in_progress_task').innerHTML
-  const done_view_template = s('.inactive_task').innerHTML
-
-  const e_from = (template, model) => {
-    const container = p_dom(document.createElement('div'))
-    for (const key in model) {
-      template = template.replace(
-        new RegExp('{' + key + '}', 'g'),
-        '' + model[key]
-      )
-    }
-    container.innerHTML = template
-    return container.s('div')
-  }
-
-  const input_box = s('.new_task') // New Task View.
-  const output_box = s('.output_box')
-  const log = msg => output_box.innerHTML = msg || ''
-  const trait_login = 'email:'
-  const credentials = {}
-  const clear_input = () => (input_box.value = '')
-  const check_input_type = type => (type === input_box.attr('type'))
-  const is_text_inputing = () => check_input_type('text')
-  const is_password_inputing = () => check_input_type('password')
-  const set_input_attr = obj => {
-    for (const k in obj) {
-      input_box.set(k, obj[k])
-    }
-  }
-  input_box.onkeydown = e => {
-    if(e.keyCode === 13 && input_box.value){
-      const desc = input_box.value
-      clear_input()
-      if (is_text_inputing()) {
-        if (desc.startsWith(trait_login)) {
-          credentials.email = desc.substr(trait_login.length, desc.length)
-          set_input_attr({
-            placeholder: '输入密码',
-            type: 'password'
-          })
-        } else {
-          create_wip_task(create_task({ desc }))
-        }
-      } else {
-        set_input_attr({
-          placeholder: '输入新任务',
-          type: 'text'
-        })
-        login(credentials.email, desc).catch(
-          res => log(`登录失败 : ${res.msg}`)
-        )
-      }
-    } else {
-      log()
-    }
-  }
-
-  const in_progress_view = s('.in_progress') // In-progress Tasks View.
-  const completed_view = s('.completed')   // Completed Tasks View.
-  const pending_view = s('.pending')   // Pending Tasks View.
-
-  const in_progress_tasks = (() => {
-    const wip_mami = []
-    const get_worker = {
-      last: () => wip_mami[wip_mami.length - 1],
-      is_empty: () => (0 === wip_mami.length)
-    }
-    const wip_handler = {
-      get: (_, key) => {
-        if (get_worker.hasOwnProperty(key)) {
-          return get_worker[key]
-        }
-        return wip_mami[key]
-      },
-      set: (_, key, val) => {
-        wip_mami[key] = val
-        return true
-      }
-    }
-    const p_wip = new Proxy(wip_mami, wip_handler)
-    return p_wip
-  })()
-  const completed_tasks = []  // Completed Tasks Model.
-  const pending_tasks = []  // Pending Tasks Model.
-  /////// Globals initialized. ///////
-
-  const update_footer = () => {
-    let itCount = in_progress_tasks.length
-    let ctCount = completed_tasks.length
-    let ccCount = pending_tasks.length
-
-    s('.it-count').innerHTML = itCount + ' '
-    s('.ct-count').innerHTML = ' ' + ctCount + ' '
-    s('.cc-count').innerHTML = ' ' + ccCount + ' '
-    const cc = s('.clear_completed')
-    if (ctCount > 0) {
-      cc.remove_class('hide')
-    } else {
-      cc.add_class('hide')
-    }
-    const cp = s('.clear_pending')
-    if (ccCount > 0) {
-      cp.remove_class('hide')
-    } else {
-      cp.add_class('hide')
-    }
-  }
-
-  const create_wip_task = (task, is_init) => {  // Create In-progress Task.
-    const obj = {desc: task.desc}
-    const d = e_from(task_view_template, obj)
-    if (in_progress_tasks.is_empty()) {
-      task.activate(d)
-    }
-    in_progress_view.append(d)
-
-    // Bind handler to the buttons.
-    d.s('.remove_btn').onclick = () => {
-      // Pend a task.
-      remove_a_task(d, in_progress_tasks)
-      create_pending_task(task)
-      passively_active()
-    }
-    d.s('.complete_btn').onclick = () => {
-      // Complete a task.
-      remove_a_task(d, in_progress_tasks)
-      create_done_task(task)
-      passively_active()
-    }
-    d.s('.activate_btn').onclick = () => {
-      // Activate a task.
-      activate_wip_task(d)
-    }
-    d.s('.up_btn').onclick = () => {
-      // Move a task up one row.
-      const exchanged = move_item_up(d)
-      if (false === exchanged) {
-        return
-      }
-      save_task(exchanged)
-      save_task(task)
-    }
-
-    show_time(task, d)
-
-    // Synchronize data.
-    if (!is_init) {
-      task.sn = (
-        in_progress_tasks.is_empty() ?
-        0 : (in_progress_tasks.last().sn + 1)
-      )
-      task.state = task_state.in_progress
-      save_task(task)
-    }
-    in_progress_tasks.push(task)
-
-    update_footer()
-    return d
-  }
-
-  const passively_active = () => {
-    const top = in_progress_view.s('.task:nth-of-type(1)')
-    if (!top) {
-      return
-    }
-    const desc = top.s('span').innerHTML
-    const top_task = get_by_desc(in_progress_tasks, desc)
-    top_task.activate(top)
-    save_task(top_task)
-  }
-
-  const move_item_up = item => { // Only work for in_progress tasks
-    const prevItem = item.prev()
-    const content = prevItem.s('span').innerHTML
-    const task = remove_a_task(item, in_progress_tasks)
-    in_progress_view.insert(item, prevItem)
-    return insert_by_desc(in_progress_tasks, content, task)
-  }
-
-  const activate_wip_task = (view, is_init) => {
-    // De-activate the current active task.
-    const top = in_progress_view.s('.task:nth-of-type(1)')
-    const top_task = in_progress_tasks[0]
-    top_task.inactivate()
-    if (!is_init) {
-      save_task(top_task)
-    }
-    show_time(top_task, top)
-
-    // Activate the selected task.
-    const task = remove_a_task(view, in_progress_tasks)  // Temporarily remove the selected task.
-    const locator = in_progress_view.s('.task:nth-of-type(1)')
-    if (locator) {  // Move current task to the head of the list.
-      in_progress_view.insert(view, locator)
-    } else {
-      in_progress_view.append(view)
-    }
-
-    // Synchronize the storage.
-    in_progress_tasks.splice(0, 0, task)
-    task.activate(view)
-    show_time(task, view)
-    if (!is_init) {
-      task.sn = top_task.sn - 1
-      save_task(task)
-    }
-
-    update_footer()
-  }
-
-  const get_by_desc = (arr, desc) => {
-    for (const t of arr) {
-      if (desc === t.desc) {
-        return t
-      }
-    }
-    return undefined
-  }
-
-  const remove_by_desc = (arr, desc) => {
-    let index = 0
-    for (const t of arr) {
-      if (desc === t.desc) {
-        return arr.splice(index, 1)[0]
-      }
-      ++index
-    }
-    return undefined
-  }
-
-  const insert_by_desc = (arr, desc, toInsert) => {
-    let index = 0
-    for (const t of arr) {
-      if (desc === t.desc) {
-        const sn = toInsert.sn
-        toInsert.state = task_state.in_progress
-        toInsert.sn = t.sn
-        t.sn = sn
-        arr.splice(index, 0, toInsert)
-        return t
-      }
-      ++index
-    }
-    return undefined
-  }
-
-  const remove_a_task = (view, type) => {  // Remove In-progress Task.
-    // Remove the task view from the page.
-    const c = view.parentNode
-    c.removeChild(view.is_proxy ? view.mami : view)
-
-    const taskDesc = view.s('span').innerText
-    const task = remove_by_desc(type, taskDesc)
-    task.complete()
-
-    update_footer()
-    return task
-  }
-
-  const create_done_task = (task, is_init) => {  // Create Completed Task.
-    task.complete()
-
-    const obj = {desc: task.desc, icon_color:'green'}
-    const d = e_from(done_view_template, obj)
-    completed_view.append(d)
-
-    // Bind handler to the remove button.
-    d.s('.remove_btn').onclick = () => {
-      remove_a_task(d, completed_tasks)
-      task.is_cleared = true
-      save_task(task)
-    }
-    d.s('.roll_btn').onclick = () => {
-      remove_a_task(d, completed_tasks)
-      create_wip_task(task)
-    }
-
-    show_time(task, d)
-
-    // Synchronize data.
-    completed_tasks.push(task)  // Perhaps 0-100 means progress? Or an object.
-    if (!is_init) {
-      save_task(task)
-    }
-
-    update_footer()
-    return d
-  }
-
-  const create_pending_task = (task, is_init) => {  // Create Pending Task.
-    task.pend()
-
-    const obj = {desc:task.desc, icon_color:'gray'}
-    const d = e_from(done_view_template, obj)
-    pending_view.append(d)
-    // Bind handler to the remove button.
-    d.s('.remove_btn').onclick = () => {
-      remove_a_task(d, pending_tasks)
-      task.is_cleared = true
-      save_task(task)
-    }
-    d.s('.roll_btn').onclick = () => {
-      remove_a_task(d, pending_tasks)
-      create_wip_task(task)
-    }
-
-    show_time(task, d)
-
-    // Synchronize data.
-    pending_tasks.push(task)  // Perhaps 0-100 means progress? Or an object.
-    if (!is_init) {
-      save_task(task)
-    }
-
-    update_footer()
-    return d
-  }
-
-  const show_time = (task, view) => {
-    if (!view) {
-      return
-    }
-    if(task.get_timecost() > 0){
-      const a = view.s('.time_cost')
-      a.remove_class('hide')
-      a.innerHTML = time_str(task.get_timecost())
-    }
-  }
-
-  const clear_completed_handler = () => {
-    let task = completed_view.s('.task')
-    while(task){
-      const t = remove_a_task(task, completed_tasks)
-      t.is_cleared = true
-      save_task(t)
-      task = completed_view.s('.task')
-    }
-  }
-  s('.clear_completed_btn').onclick = clear_completed_handler
-  s('.clear_completed').onclick = clear_completed_handler
-
-  const clear_pending_handler = () => {
-    let task = pending_view.s('.task')
-    while(task){
-      const t = remove_a_task(task, pending_tasks)
-      t.is_cleared = true
-      save_task(t)
-      task = pending_view.s('.task')
-    }
-  }
-  s('.clear_pending_btn').onclick = clear_pending_handler
-  s('.clear_pending').onclick = clear_pending_handler
-
-  list_task().then(result => {
-    const {
-      success,
-      tasks
-    } = result
-    if (false === success) {
-      log('取数据失败 : 请咨询服务器管理员')
-      return
-    }
-    tasks.sort(({ sn: a }, { sn: b }) => {
-      a = a || 0
-      b = b || 0
-      return a - b
+      resp => resp.json().then(result => {
+        res(result)
+      }).catch(err => {
+        rej({ err, msg: 'receive json failed' })
+      })
+    ).catch(err => {
+      rej({ err, msg: 'fetch failed' })
     })
-    // Init the tasks.
-    for (const task of tasks) {
-      if (task_state.in_progress === task.state) {
-        const i = create_task(task)
-        if (task.is_activated) {
-          activate_wip_task(create_wip_task(i, true), true)
-        } else {
-          create_wip_task(i, true)
-        }
-      } else if (task_state.completed === task.state) {
-        create_done_task(create_task(task), true)
-      } else {
-        create_pending_task(create_task(task), true)
-      }
-    }
-  }).catch(res => {
-    console.log(res, '<<<<<<< Error')
-    log(`取数据失败 : ${res.msg}`)
   })
+  const insert = text => {
+    post('s/', { text }).then(o => {
+      const {
+        nums: { increment },
+        stats: { size },
+        state
+      } = o
+      assign_obj(model, {
+        increment,
+        file_size: size,
+        apprx_len: Math.floor(size / 3),
+        state
+      })
+    }).catch(e => {
+      model.msg = e.msg
+      console.warn('Error occured:', e.err)
+    }).finally(() => {
+      update_ui()
+    })
+  }
+  
+  insert(seperator)
 })
 </script>
   <title>Yes, it is!</title>
-  <meta charset="utf8" name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta charset="utf8" name="viewport" content="
+    width=device-width,
+    height=device-height,
+    initial-scale=1,
+    user-scalable=no" />
   <link rel="shortcut icon" href="css/task_manager.png" />
   <style media="screen">
-  html,body{
+  html, body{
     padding: 0;
     margin: 0;
     font-family: Microsoft YaHei;
-  }
-  body{
-    width:640px;
-    margin: 0 auto;
-    background: #eeeeee;
-    color: #333333;
-  }
-  .header {
-    text-align: center;
-  }
-  .output_box {
-    text-align: left;
-  }
-  .contents{
-    background: #fff;
-    padding: 1rem;
-    box-shadow: rgba(0, 0, 0, 0.2) 0 2px 6px 0;
-  }
-  .new_task{
-    font-size: 1rem;
-    outline: none;
-    padding: .3rem;
-    border: 1px solid #999999;
-    box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
-    box-sizing: border-box;
-    width: 100%;
-  }
-  .completed, .pending{
-    color: #999;
-  }
-  .task{
-    position: relative;
-    text-align: left;
-    font-size: 1rem;
-    line-height: 1rem;
-    padding: .5rem 0;
-    border-top: 1px solid #cccccc;
-  }
-  .task:nth-of-type(1){
-    border-top: none;
-  }
-  .task:nth-of-type(1):hover .activate_btn,
-  .task:nth-of-type(1):hover .up_btn,
-  .task:nth-of-type(2):hover .up_btn{
-    display: none;
-  }
-  .remove_btn,
-  .complete_btn,
-  .roll_btn,
-  .activate_btn,
-  .up_btn {
-    position: absolute;
-    top: 0;
-    display: none;
-    cursor: pointer;
-    width: 1rem;
-    height: 1rem;
-  }
-  .task .remove_btn,
-  .task .complete_btn,
-  .task .roll_btn,
-  .task .activate_btn,
-  .task .up_btn{
-    top: .5rem;
-  }
-  .task a.time_cost{
-    position: absolute;
-    display: block;
-    top: .5rem;
-    right: 4rem;
-    height: 1rem;
-    width: 7rem;
-    font-size: .6rem;
-    line-height: 1rem;
-    text-align: right;
-    padding-right: .5rem;
-    background-color: rgba(0, 0, 0, 0.2);
-    color: #fff;
-    border-radius: .5rem;
-    cursor: default;
-  }
-  .seg_divider{
-    color: #555;
-    text-align: left;
-    font-size: 1rem;
-    line-height: 1rem;
-    padding-bottom: .4rem;
-    font-weight: bold;
-    border-bottom: 2px solid #bbb;
-    position: relative;
-    margin: 2rem 0 0 0;
-  }
-  .remove_btn{
-    right: 0px;
-    background-image: url(css/destroy.png);
-    background-repeat: no-repeat;
-    background-size: 1rem auto;
-  }
-  .complete_btn{
-    right: 1rem;
-    background-image: url(css/complete.png);
-    background-repeat: no-repeat;
-    background-size: 1rem auto;
-  }
-  .roll_btn{
-    right: 1rem;
-    background-image: url(css/roll.png);
-    background-repeat: no-repeat;
-    background-size: 1rem auto;
-  }
-  .activate_btn{
-    right: 2rem;
-    background-image: url(css/activate.png);
-    background-repeat: no-repeat;
-    background-size: 1rem auto;
-  }
-  .up_btn{
-    right: 3rem;
-    background-image: url(css/move_up.png);
-    background-repeat: no-repeat;
-    background-size: 1rem auto;
-  }
-  div.seg_divider:hover .remove_btn,
-  .task:hover .remove_btn,
-  .task:hover .complete_btn,
-  .task:hover .roll_btn,
-  .task:hover .activate_btn,
-  .task:hover .up_btn{
-    display: block;
-  }
-  .remove_btn:hover,
-  .complete_btn:hover,
-  .roll_btn:hover,
-  .activate_btn:hover,
-  .up_btn:hover{
-    background-position: 0 -1rem;
-  }
-  a.colored_icon{
-    width: 1rem;
-    height: 1rem;
-    display: inline-block;
-    border-radius: .5rem;
-    vertical-align: -2px;
-    margin: 0 5px 0 0;
-  }
-  .green{
-    background-color: #0b0;
-  }
-  .gray{
-    background-color: #ddd;
-  }
-  .yellow{
-    background-color: #dc0;
-  }
-  .in_progress .task:nth-of-type(1) .colored_icon{
-    animation: active_color 1s infinite;
-  }
-  @keyframes active_color{
-    from{background-color: #dc0;}
-    30%{background-color: #0f0}
-    70%{background-color: #d00}
-    to{background-color: #dc0;}
-  }
-  .footer{
-    color: #555;
-    background: #f4fce8;
-    font-size: .8rem;
-    padding: 1rem;
-    border-top: 1px solid #ededed;
-    box-shadow: rgba(0, 0, 0, 0.2) 0 2px 6px -1px;
-
+    width: 100vw;
+    height: 100vh;
+    
+    background-color: #888888;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
   }
-  .clear_completed,
-  .clear_pending{
-    display: block;
-    font-size: .6rem;
-    height: 1.2rem;
-    line-height: 1.2rem;
-    border-radius: .6rem;
-    padding: 0 1rem;
-    background-color: rgba(0, 0, 0, 0.1);
-    box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 0 0;
-    cursor: pointer;
-  }
-  .clear_completed:hover, .clear_pending:hover{
-    background-color: rgba(0, 0, 0, 0.2);
-  }
-  .clear_btns {
+  .content {
     display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
   }
-  .task .time_cost.hide,
-  .hide{
-    display: none;
+  .input_wrapper, span {
+    display: inline-block;
+    width: 10rem;
+  }
+  .input {
+    width: 1rem;
   }
   </style>
-  <script class='in_progress_task' type='text/template'>
-    <div class="task">
-      <a class="colored_icon yellow"></a>
-      <span>{desc}</span>
-      <a class="remove_btn" title="挂起任务"></a>
-      <a class="complete_btn" title="标记已完成任务"></a>
-      <a class="activate_btn" title="任务置顶(激活)"></a>
-      <a class="up_btn" title='上移'></a>
-      <a class="time_cost hide" title="已花费时间(分钟)">0</a>
-    </div>
-  </script>
-  <script class='inactive_task' type='text/template'>
-    <div class="task">
-      <a class="colored_icon {icon_color}"></a>
-      <span>{desc}</span>
-      <a class="remove_btn" title="移除任务"></a>
-      <a class="roll_btn" title="恢复活跃"></a>
-      <a class="time_cost hide" title="时间花费">0</a>
-    </div>
-  </script>
 </head>
 <body>
-  <div class="contents"><!-- 主内容块的开始标签。 -->
-    <!--
-      总的来说，有 3 栏数据，
-      一栏是输入新任务和显示未完成任务的地方，
-      一栏是已完成任务，
-      还有一栏是已取消任务。
-    -->
-    <!-- 每个任务有开始时间、花费时间的属性。 -->
-    <div class="header">
-      <h1>日常任务管理工具</h1>
-      <div>
-        <input class="new_task" type="text" placeholder="输入新任务" />
-      </div>
-      <div class='output_box'></div>
-    </div>
-
-    <div class="seg_divider">活跃的任务▽</div>
-    <div class="in_progress"></div>
-
-    <div class="seg_divider">完成的任务▽<a
-      class="clear_completed_btn remove_btn"
-      title="移除所有已完成任务"
-    ></a></div>
-    <div class="completed"></div>
-
-    <div class="seg_divider">挂起的任务▽<a
-      class="clear_pending_btn remove_btn"
-      title="移除所有挂起的任务"
-    ></a></div>
-    <div class="pending"></div>
-  </div><!-- 主内容块的结束标签。 -->
-
-  <div class="footer">
-      <div><b class="it-count">0 </b>项活动任务</div>
-      <div class="clear_btns">
-        <a
-          class="clear_completed hide"
-        >清除<b class="ct-count"> 0 </b>项已完成任务</a>
-        <a
-          class="clear_pending hide"
-        >清除<b class="cc-count"> 0 </b>项已挂起任务</a>
-      </div>
+  <div class="content">
+    <div>Current increment: <span class="increment">0</span></div>
+    <div>Total file size: <span class="file_size">0</span></div>
+    <div>Approximate length: <span class="apprx_len">0</span></div>
+    <div>State: <span class="state">unknown</span></div>
+    <div class="msg"></div>
+    <div class="input_wrapper"><input class="input" type="text" /></div>
   </div>
 </body>
 </html>
