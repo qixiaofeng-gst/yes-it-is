@@ -1,27 +1,14 @@
 {
-  "name": "task-server",
+  "name": "yii-server",
   "version": "0.0.1",
-  "description": "Server for task manager",
+  "description": "Server for yes-it-is",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/qixiaofeng-gst/task-server.git"
-  },
-  "keywords": [
-    "task",
-    "manager"
-  ],
   "author": "qixiaofeng",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/qixiaofeng-gst/task-server/issues"
-  },
-  "homepage": "https://github.com/qixiaofeng-gst/task-server#readme",
   "dependencies": {
-    "express": "^4.16.4",
-    "mongodb": "^3.1.10"
+    "express": "^4.16.4"
   }
 }
