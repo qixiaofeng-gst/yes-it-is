@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="CN">
 <head>
 <script>
 window.addEventListener('load', () => {
@@ -198,7 +198,7 @@ window.addEventListener('load', () => {
   }
 
   //const url_base = 'https://www.gsegment.com/tms'
-  const url_base = 'http://localhost:3000'
+  const url_base = 'http://localhost:8001'
   const msg_login = 'login please'
   const post = (url, data) => new Promise((res, rej) => {
     fetch(
@@ -255,7 +255,7 @@ window.addEventListener('load', () => {
   html, body{
     padding: 0;
     margin: 0;
-    font-family: Microsoft YaHei;
+    font-family: Microsoft YaHei,serif;
     width: 100vw;
     height: 100vh;
     
@@ -281,7 +281,7 @@ window.addEventListener('load', () => {
 </head>
 <body>
   <div class="content">
-    <div class="input_wrapper"><input class="input" type="text" /></div>
+    <div class="input_wrapper"><label><input class="input" type="text" /></label></div>
     <div>Current increment: <span class="increment">0</span></div>
     <div>Total file size: <span class="file_size">0</span></div>
     <div>Approximate length: <span class="apprx_len">0</span></div>
