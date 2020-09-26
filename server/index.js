@@ -8,7 +8,7 @@ const working_state = {
     temp: true,
 }
 for (const k in working_state) {
-    working_state[k] = k
+    working_state[k] = `${k}.txt`
 }
 
 const load_working_path = () => {
@@ -28,8 +28,7 @@ const load_working_path = () => {
 }
 load_working_path()
 
-const file_suffix = '.txt'
-const file_name = `${working_state.working}${file_suffix}`
+const file_name = working_state.working
 
 const app = express()
 const app_port = 8001

@@ -262,9 +262,17 @@
             align-items: flex-end;
         }
 
+        .content > div {
+            display: flex;
+            align-self: flex-end;
+        }
+
         .input_wrapper, span {
             display: inline-block;
             width: 10rem;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
         }
 
         .input {
