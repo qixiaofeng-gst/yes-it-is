@@ -10,6 +10,24 @@ const working_state = {
 for (const k in working_state) {
     working_state[k] = k
 }
+
+const load_working_path = () => {
+    // 1. Search specific path, check existance.
+    const link_file_path = path.normalize(path.join(__dirname, '../working_path_link.txt'))
+    try {
+        // 3. Use the content as path if exists.
+        const loaded_working_path = fs.readFileSync(link_file_path).toString('utf-8')
+        fs.accessSync(path.dirname(loaded_working_path))
+        working_state.working = loaded_working_path
+    } catch (e) {
+        // 2. Warning if does not exist.
+        console.log(e.message)
+        console.log('Failed to load/use link file. Use default working.txt.')
+        console.log('You might create a working_path_link.txt file to specify a valid working file.')
+    }
+}
+load_working_path()
+
 const file_suffix = '.txt'
 const file_name = `${working_state.working}${file_suffix}`
 
