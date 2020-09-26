@@ -1,292 +1,281 @@
 ﻿<!DOCTYPE html>
 <html lang="CN">
 <head>
-<script>
-window.addEventListener('load', () => {
-  console.log(
-    '%c>>>> %cLog indicate %cdeveloping.',
-    'color: #353535; font-weight: 700;',
-    'color: deepskyblue;',
-    'color: darkgreen;'
-  )
-  
-  const seperator = '======='
+    <script>
+        window.addEventListener('load', () => {
+            console.log(
+                '%c>>>> %cLog indicate %cdeveloping.',
+                'color: #353535; font-weight: 700;',
+                'color: deepskyblue;',
+                'color: darkgreen;'
+            )
 
-  const one_moment = 20
-  const one_second = 50 * one_moment
-  const one_minute = 60 * one_second
-  const one_hour = 60 * one_minute
-  const one_day = 24 * one_hour
-  const two_digit = num => (num < 10 ? `0${num}` : num)
-  const time_str = interval => {
-    const day = Math.floor(interval / one_day)
-    const hour = Math.floor((interval % one_day) / one_hour)
-    const minute = Math.floor((interval % one_hour) / one_minute)
-    const second = Math.floor((interval % one_minute) / one_second)
-    const millisecond = interval % one_second
-    const ms = (millisecond < 10 ? `00${millisecond}`
-      : (millisecond < 100 ? `0${millisecond}`
-        : millisecond
-      )
-    )
-    return `${day}D${two_digit(hour)}:${two_digit(minute)}:${two_digit(second)}.${ms}`
-  }
+            const seperator = '======='
 
-  const s = selector => p_dom(document.querySelector(selector))
-  const e = name => p_dom(document.createElement(name))
-  const p_dom = dom => {
-    if (!dom) {
-      return dom
-    }
-    const classes = () => {
-      const trimmed_class = (dom.className && dom.className.trim()) || ''
-      const classes = trimmed_class.length > 0 ? trimmed_class.split(/\s+/) : []
-      return classes
-    }
-    const worker = {
-      is_proxy: true,
-      mami: dom,
-      s: selector => p_dom(dom.querySelector(selector)),
-      set: (key, value) => (dom.setAttribute(key, value), pd),
-      attr: name => dom.getAttribute(name),
-      focuz: () => {
-        return dom.focus()
-      },
-      append: child => {
-        if (child.is_proxy) {
-          dom.appendChild(child.mami)
-        } else {
-          dom.appendChild(child)
-        }
-        return pd
-      },
-      insert: (view, locator) => {
-        view = view.is_proxy ? view.mami : view
-        locator = locator.is_proxy ? locator.mami : locator
-        dom.insertBefore(view, locator)
-        return pd
-      },
-      add_class: clz => {
-        const old_ones = classes()
-        if (!clz || old_ones.includes(clz)) {
-          return pd
-        }
-        old_ones.push(clz)
-        dom.className = old_ones.join(' ')
-        return pd
-      },
-      has_class: clz => {
-        if (!clz) {
-          return false
-        }
-        return classes().includes(clz)
-      },
-      remove_class: clz => {
-        if (!clz) {
-          return pd
-        }
-        const old_ones = classes()
-        const idx = old_ones.indexOf(clz)
-        if (idx < 0) {
-          return pd
-        }
-        old_ones.splice(idx, 1)
-        dom.className = old_ones.join(' ')
-        return pd
-      },
-      next: () => {
-        let next = dom.nextSibling
-        while(next instanceof Text) {
-          next = next.nextSibling
-        }
-        return p_dom(next)
-      },
-      prev: () => {
-        let prev = dom.previousSibling
-        while(prev instanceof Text) {
-          prev = prev.previousSibling
-        }
-        return p_dom(prev)
-      }
-    }
+            const s = selector => p_dom(document.querySelector(selector))
+            const p_dom = dom => {
+                if (!dom) {
+                    return dom
+                }
+                const classes = () => {
+                    const trimmed_class = (dom.className && dom.className.trim()) || ''
+                    return trimmed_class.length > 0 ? trimmed_class.split(/\s+/) : []
+                }
+                // noinspection JSUnusedGlobalSymbols
+                const worker = {
+                    is_proxy: true,
+                    mami: dom,
+                    s: selector => p_dom(dom.querySelector(selector)),
+                    set: (key, value) => {
+                        dom.setAttribute(key, value)
+                        return pd
+                    },
+                    attr: name => dom.getAttribute(name),
+                    focuz: () => {
+                        return dom.focus()
+                    },
+                    append: child => {
+                        if (child.is_proxy) {
+                            dom.appendChild(child.mami)
+                        } else {
+                            dom.appendChild(child)
+                        }
+                        return pd
+                    },
+                    insert: (view, locator) => {
+                        view = view.is_proxy ? view.mami : view
+                        locator = locator.is_proxy ? locator.mami : locator
+                        dom.insertBefore(view, locator)
+                        return pd
+                    },
+                    add_class: clz => {
+                        const old_ones = classes()
+                        if (!clz || old_ones.includes(clz)) {
+                            return pd
+                        }
+                        old_ones.push(clz)
+                        dom.className = old_ones.join(' ')
+                        return pd
+                    },
+                    has_class: clz => {
+                        if (!clz) {
+                            return false
+                        }
+                        return classes().includes(clz)
+                    },
+                    remove_class: clz => {
+                        if (!clz) {
+                            return pd
+                        }
+                        const old_ones = classes()
+                        const idx = old_ones.indexOf(clz)
+                        if (idx < 0) {
+                            return pd
+                        }
+                        old_ones.splice(idx, 1)
+                        dom.className = old_ones.join(' ')
+                        return pd
+                    },
+                    next: () => {
+                        let next = dom.nextSibling
+                        while (next instanceof Text) {
+                            next = next.nextSibling
+                        }
+                        return p_dom(next)
+                    },
+                    prev: () => {
+                        let prev = dom.previousSibling
+                        while (prev instanceof Text) {
+                            prev = prev.previousSibling
+                        }
+                        return p_dom(prev)
+                    },
+                }
 
-    const handler = {
-      get: (mami, key, receiver) => {
-        if (worker.hasOwnProperty(key)) {
-          return worker[key]
-        }
-        return mami[key]
-      },
-      set: (mami, key, value, receiver) => {
-        mami[key] = value
-        return value
-      }
-    }
+                // noinspection JSUnusedGlobalSymbols
+                const handler = {
+                    get: (mami, key, _receiver) => {
+                        if (worker.hasOwnProperty(key)) {
+                            return worker[key]
+                        }
+                        return mami[key]
+                    },
+                    set: (mami, key, value, _receiver) => {
+                        mami[key] = value
+                        return value
+                    },
+                }
 
-    const pd = new Proxy(dom, handler)
-    return pd
-  }
-  
-  const model = {}
-  const views = {}
-  /**
-  Basic configuration format:
-  {
-    init: comp => {
-      //Do something
-    },
-    update: (comp, key) => {
-      //Do something
-    },
-  },
-  **/
-  const views_config = {
-    increment: {},
-    file_size: {},
-    apprx_len: {},
-    state: {},
-    msg: {},
-    input: {
-      init: comp => {
-        comp.onkeydown = ({ keyCode }) => {
-          if (13 == keyCode && comp.value) {
-            insert(comp.value)
-            comp.value = ''
-          }
-        }
-        comp.onblur = e => {
-          comp.focuz()
-        }
-        comp.focuz()
-      },
-      update: (comp, key) => {
-      },
-    },
-  }
-  for (const k in views_config) {
-    const comp = s(`.${k}`)
-    views[k] = comp
-    const { init } = views_config[k]
-    if (undefined === init) {
-      continue
-    } else {
-      init(comp)
-    }
-  }
-  const update_ui = () => {
-    for (const k in views_config) {
-      const { update } = views_config[k]
-      if (undefined === update) {
-        const m = model[k]
-        if (undefined === m) {
-          continue
-        }
-        views[k].innerText = `${m}`
-      } else {
-        update(views[k], k)
-      }
-    }
-  }
-  const assign_obj = (target, source) => {
-    for (const k in source) {
-      const v = source[k]
-      if (undefined === v) {
-        continue
-      }
-      target[k] = v
-    }
-  }
+                const pd = new Proxy(dom, handler)
+                return pd
+            }
 
-  //const url_base = 'https://www.gsegment.com/tms'
-  const url_base = 'http://localhost:8001'
-  const msg_login = 'login please'
-  const post = (url, data) => new Promise((res, rej) => {
-    fetch(
-      `${url_base}/${url}`,//?session=${localStorage.tm_session}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    ).then(
-      resp => resp.json().then(result => {
-        res(result)
-      }).catch(err => {
-        rej({ err, msg: 'receive json failed' })
-      })
-    ).catch(err => {
-      rej({ err, msg: 'fetch failed' })
-    })
-  })
-  const insert = text => {
-    post('s/', { text }).then(o => {
-      const {
-        nums: { increment },
-        stats: { size },
-        state
-      } = o
-      assign_obj(model, {
-        increment,
-        file_size: size,
-        apprx_len: Math.floor(size / 3),
-        state
-      })
-    }).catch(e => {
-      model.msg = e.msg
-      console.warn('Error occured:', e.err)
-    }).finally(() => {
-      update_ui()
-    })
-  }
-  
-  insert(seperator)
-})
-</script>
-  <title>Yes, it is!</title>
-  <meta charset="utf8" name="viewport" content="
+            const model = {}
+            const views = {}
+            // noinspection JSUnusedGlobalSymbols
+            /**
+             Basic configuration format:
+             {
+                init: comp => {
+                  //Do something
+                },
+                update: (comp, key) => {
+                  //Do something
+                },
+             },
+             **/
+            const views_config = {
+                increment: {},
+                file_size: {},
+                apprx_len: {},
+                state: {},
+                msg: {},
+                input: {
+                    init: comp => {
+                        comp.onkeydown = ({keyCode}) => {
+                            if (13 === keyCode && comp.value) {
+                                insert(comp.value)
+                                comp.value = ''
+                            }
+                        }
+                        comp.onblur = _e => {
+                            comp.focuz()
+                        }
+                        comp.focuz()
+                    },
+                    update: (_comp, _key) => {
+                    },
+                },
+            }
+            for (const k in views_config) {
+                const comp = s(`.${k}`)
+                views[k] = comp
+                const {init} = views_config[k]
+                if (undefined === init) {
+                    //
+                } else {
+                    init(comp)
+                }
+            }
+            const update_ui = () => {
+                for (const k in views_config) {
+                    const {update} = views_config[k]
+                    if (undefined === update) {
+                        const m = model[k]
+                        if (undefined === m) {
+                            continue
+                        }
+                        views[k].innerText = `${m}`
+                    } else {
+                        update(views[k], k)
+                    }
+                }
+            }
+            const assign_obj = (target, source) => {
+                for (const k in source) {
+                    if (false === source.hasOwnProperty(k)) {
+                        continue
+                    }
+                    const v = source[k]
+                    if (undefined === v) {
+                        continue
+                    }
+                    target[k] = v
+                }
+            }
+
+            // XXX Using https://www.gsegment.com/tms
+            const url_base = 'http://localhost:8001'
+            const post = (url, data) => new Promise((res, rej) => {
+                fetch(
+                    `${url_base}/${url}`,
+                    {
+                        method: 'POST',
+                        body: JSON.stringify(data),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                ).then(
+                    resp => resp.json().then(result => {
+                        res(result)
+                    }).catch(err => {
+                        rej({err, msg: 'receive json failed'})
+                    })
+                ).catch(err => {
+                    rej({err, msg: 'fetch failed'})
+                })
+            })
+            const insert = text => {
+                post('s/', {text}).then(o => {
+                    const {
+                        nums: {increment},
+                        stats: {size},
+                        state
+                    } = o
+                    assign_obj(model, {
+                        increment,
+                        file_size: size,
+                        apprx_len: Math.floor(size / 3),
+                        state
+                    })
+                }).catch(e => {
+                    model.msg = e.msg
+                    console.warn('Error occured:', e.err)
+                }).finally(() => {
+                    update_ui()
+                })
+            }
+
+            insert(seperator)
+        })
+    </script>
+    <title>Yes, it is!</title>
+    <meta charset="utf8" name="viewport" content="
     width=device-width,
     height=device-height,
     initial-scale=1,
-    user-scalable=no" />
-  <link rel="shortcut icon" href="css/activate.png" />
-  <style media="screen">
-  html, body{
-    padding: 0;
-    margin: 0;
-    font-family: Microsoft YaHei,serif;
-    width: 100vw;
-    height: 100vh;
-    
-    background-color: #888888;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-end;
-  }
-  .input_wrapper, span {
-    display: inline-block;
-    width: 10rem;
-  }
-  .input {
-    width: 1rem;
-  }
-  </style>
+    user-scalable=no"/>
+    <link rel="shortcut icon" href="css/activate.png"/>
+    <style media="screen">
+        html, body {
+            padding: 0;
+            margin: 0;
+            font-family: Microsoft YaHei, serif;
+            width: 100vw;
+            height: 100vh;
+
+            background-color: #888888;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .input_wrapper, span {
+            display: inline-block;
+            width: 10rem;
+        }
+
+        .input {
+            width: 1rem;
+        }
+    </style>
 </head>
 <body>
-  <div class="content">
-    <div class="input_wrapper"><label><input class="input" type="text" /></label></div>
+<div class="content">
+    <div class="input_wrapper"><label><input class="input" type="text"/></label></div>
     <div>Current increment: <span class="increment">0</span></div>
     <div>Total file size: <span class="file_size">0</span></div>
     <div>Approximate length: <span class="apprx_len">0</span></div>
     <div>State: <span class="state">unknown</span></div>
     <div class="msg"></div>
-  </div>
+</div>
 </body>
 </html>
