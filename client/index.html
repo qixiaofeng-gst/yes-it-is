@@ -133,8 +133,12 @@
                 input: {
                     init: comp => {
                         comp.onkeydown = ({keyCode}) => {
-                            if (13 === keyCode && comp.value) {
-                                insert(comp.value)
+                            if (13 === keyCode) {
+                                if (comp.value) {
+                                    insert(comp.value)
+                                } else {
+                                    insert('\n')
+                                }
                                 comp.value = ''
                             }
                         }
