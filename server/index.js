@@ -59,6 +59,6 @@ const clientPath = path.normalize(path.join(__dirname, '../client'))
 app.use('/write', express.static(clientPath))
 
 app.listen(app_port, () => {
-    console.log(`Server listening ${app_port}. Start at ${new Date().toLocaleString()}`)
+    console.log(`Server launch at http://localhost:${app_port} . Start at ${new Date().toLocaleString()}`)
     console.log(`Client path: ${clientPath}`)
 })
